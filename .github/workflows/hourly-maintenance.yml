@@ -27,7 +27,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html styles.css app.js manifest.webmanifest icon.svg sw.js README.md; do
+          for file in index.html styles.css app.js toolbox-utils.mjs manifest.webmanifest icon.svg sw.js README.md tests/toolbox-utils.test.mjs; do
             test -s "$file" || { echo "::error::Missing or empty required file: $file"; exit 1; }
           done
 
@@ -40,6 +40,8 @@ jobs:
           grep -q 'rel="manifest"' index.html
           grep -q 'register("./sw.js")' app.js
           node --check app.js
+          node --check toolbox-utils.mjs
           node --check sw.js
+          node --test tests/toolbox-utils.test.mjs
           node -e 'const fs=require("fs"); const m=JSON.parse(fs.readFileSync("manifest.webmanifest","utf8")); if(!m.name || !m.start_url || !Array.isArray(m.icons)) process.exit(1); console.log("Manifest valid:",m.name)'
           echo "Static Toolbox checks passed."
