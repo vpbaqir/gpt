@@ -36,3 +36,18 @@ export function regexMatches(pattern, input, flags = "") {
   }
   return { count: matches.length, truncated, text: matches.length ? JSON.stringify(matches, null, 2) : "No matches found." };
 }
+
+export function convertTimestamp(input, mode) {
+  const raw = String(input).trim();
+  if (!raw) throw new Error("Enter a timestamp or date first.");
+  if (mode === "timestamp-to-date") {
+    const n = Number(raw);
+    if (!Number.isFinite(n)) throw new Error("Enter a numeric Unix timestamp.");
+    const date = new Date(Math.abs(n) < 100000000000 ? n * 1000 : n);
+    if (Number.isNaN(date.getTime())) throw new Error("Timestamp is outside the supported date range.");
+    return date.toISOString() + "\nUnix seconds: " + Math.floor(date.getTime() / 1000) + "\nUnix milliseconds: " + date.getTime();
+  }
+  const ms = Date.parse(raw);
+  if (!Number.isFinite(ms)) throw new Error("Enter a valid date, preferably ISO format.");
+  return mode === "date-to-milliseconds" ? String(ms) : String(Math.floor(ms / 1000));
+}
