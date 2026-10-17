@@ -1,4 +1,4 @@
-export function slugify(input) { return String(input).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
+export function slugify(input) { return String(input).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
 
 export function sortLines(input, mode) {
   const lines = String(input).split(/\r?\n/);
