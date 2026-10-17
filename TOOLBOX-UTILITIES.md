@@ -20,3 +20,8 @@ Text and data are processed in the browser; no Toolbox upload endpoint is used. 
 ## Validation
 
 The repository includes toolbox-test.mjs, a lightweight regression suite covering all ten utility algorithms. Run it with Node.js using node toolbox-test.mjs.
+
+
+## Additional tools
+
+The next release adds more browser-side tools for everyday conversion and text analysis.
