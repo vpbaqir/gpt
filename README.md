@@ -23,3 +23,7 @@ The UI currently uses a demo response so it works without a secret or server. Fo
 ## Hourly maintenance
 
 The GitHub Actions workflow in `.github/workflows/hourly-maintenance.yml` runs hourly and on manual dispatch. It checks for basic project integrity and reports the result in Actions. Scheduled checks do not automatically rewrite code or deploy without a reviewed, scoped change.
+
+## Current maintenance branch
+
+The mobile-first GPT application is also available on [`project/2026-10-17-mobile-gpt`](https://github.com/vpbaqir/gpt/tree/project/2026-10-17-mobile-gpt). Hourly validation is configured in GitHub Actions (`.github/workflows/hourly-maintenance.yml`). It checks project integrity; it does not autonomously invent and commit product changes on every run.
