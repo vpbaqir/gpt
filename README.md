@@ -1,25 +1,27 @@
-# GPT — Mobile AI Companion
+# NEXUS — Creative Universe
 
-A mobile-first, installable AI companion interface designed for fast conversations, clear navigation, and a calm reading experience.
+Nexus is a mobile-first, installable creative workspace for curious people. It helps turn small ideas into projects, discover playful experiments, and keep a personal collection of things worth exploring.
 
-## Features
+## Experience
 
-- Responsive mobile-first layout
-- Chat composer with send states and conversation starters
-- Local conversation history saved in the browser
-- Light/dark appearance toggle
-- Installable Progressive Web App (PWA) shell
-- Keyboard-friendly controls and reduced-motion support
-- No API key is embedded in the frontend; connect a trusted backend to enable live AI responses
+- Original editorial visual design with botanical greens, soft paper surfaces, and custom CSS artwork
+- Three ways to begin: build something, explore a question, or play with an experiment
+- Create personal ideas and save interesting discoveries
+- Search discovery cards and filter saved ideas or personal creations
+- Responsive navigation for phones, tablets, and desktop
+- Light and dark themes
+- Local persistence for saved ideas and creations
+- Installable Progressive Web App (PWA)
+- No framework or package dependencies
 
 ## Run locally
 
-This is a static application. Open `index.html` in a browser, or serve the repository with any static web server.
+Open `index.html` in a browser or serve this directory with any static web server.
 
-## Connect an AI provider
+## Data and limitations
 
-The UI currently uses a demo response so it works without a secret or server. For production, create a backend endpoint such as `/api/chat`, store provider credentials in server-side environment variables, and replace the demo handler in `app.js`. Never expose API keys in client-side code.
+Personal ideas and saved items are stored in the browser on the current device. This is a frontend-first creative workspace; it does not claim to provide a live AI backend or sync data between devices. If AI features are added later, use a secure server-side endpoint and never put provider API keys in client-side code.
 
 ## Hourly maintenance
 
-The GitHub Actions workflow in `.github/workflows/hourly-maintenance.yml` runs hourly and on manual dispatch. It checks for basic project integrity and reports the result in Actions. Scheduled checks do not automatically rewrite code or deploy without a reviewed, scoped change.
+The GitHub Actions workflow runs hourly and on manual dispatch. It validates the app shell, JavaScript syntax, and PWA manifest. Scheduled checks help catch regressions; they do not blindly rewrite the product or automatically deploy unreviewed changes.
