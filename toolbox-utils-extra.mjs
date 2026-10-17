@@ -51,3 +51,27 @@ export function convertTimestamp(input, mode) {
   if (!Number.isFinite(ms)) throw new Error("Enter a valid date, preferably ISO format.");
   return mode === "date-to-milliseconds" ? String(ms) : String(Math.floor(ms / 1000));
 }
+
+const unitFactors = {
+  length: { mm: 0.001, cm: 0.01, m: 1, km: 1000, in: 0.0254, ft: 0.3048, yd: 0.9144, mi: 1609.344 },
+  mass: { mg: 0.000001, g: 0.001, kg: 1, oz: 0.028349523125, lb: 0.45359237 },
+  volume: { ml: 0.001, l: 1, cup: 0.2365882365, usgal: 3.785411784 }
+};
+export function convertUnit(input, category, from, to) {
+  const value = Number(input);
+  if (!String(input).trim() || !Number.isFinite(value)) throw new Error("Enter a valid number.");
+  if (category === "temperature") {
+    let c;
+    if (from === "C") c = value;
+    else if (from === "F") c = (value - 32) * 5 / 9;
+    else if (from === "K") c = value - 273.15;
+    else throw new Error("Choose a valid starting temperature unit.");
+    if (to === "C") return Number(c.toPrecision(12));
+    if (to === "F") return Number((c * 9 / 5 + 32).toPrecision(12));
+    if (to === "K") return Number((c + 273.15).toPrecision(12));
+    throw new Error("Choose a valid target temperature unit.");
+  }
+  const factors = unitFactors[category];
+  if (!factors || !(from in factors) || !(to in factors)) throw new Error("Choose compatible units from the same category.");
+  return Number((value * factors[from] / factors[to]).toPrecision(12));
+}
