@@ -78,3 +78,29 @@ export function csvToJson(input) {
     return Object.fromEntries(headers.map((header, i) => [header, row[i] ?? ""]));
   });
 }
+
+function csvCell(value) {
+  const text = value == null ? "" : typeof value === "string" ? value : typeof value === "object" ? JSON.stringify(value) : String(value);
+  return /[",\r\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+}
+
+export function jsonToCsv(input) {
+  if (!String(input).trim()) throw new Error("Paste a JSON array first.");
+  let rows;
+  try { rows = JSON.parse(input); }
+  catch { throw new Error("The JSON is invalid. Check commas, quotes, and brackets."); }
+  if (!Array.isArray(rows) || !rows.length) throw new Error("JSON must be a non-empty array of objects.");
+  if (rows.some(row => !row || typeof row !== "object" || Array.isArray(row))) throw new Error("Every item in the JSON array must be an object.");
+  const headers = [...new Set(rows.flatMap(row => Object.keys(row)))];
+  if (!headers.length) throw new Error("The objects do not contain any columns.");
+  return [headers, ...rows.map(row => headers.map(header => row[header]))].map(row => row.map(csvCell).join(",")).join("\r\n");
+}
+
+export function markdownOutline(input) {
+  const headings = String(input).split(/\r?\n/).map((line, index) => {
+    const match = line.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$/);
+    return match ? { level: match[1].length, text: match[2].trim(), line: index + 1 } : null;
+  }).filter(Boolean);
+  if (!headings.length) throw new Error("No Markdown headings found. Add headings such as # Title or ## Section.");
+  return { count: headings.length, text: headings.map(h => "  ".repeat(h.level - 1) + "- " + h.text + " (line " + h.line + ")").join("\n") };
+}
