@@ -1,5 +1,5 @@
-const CACHE = "toolbox-shell-v1";
-const CORE = ["./","./index.html","./styles.css","./app.js","./manifest.webmanifest","./icon.svg"];
+const CACHE = "toolbox-shell-v2";
+const CORE = ["./","./index.html","./styles.css","./app.js","./toolbox-addons.js","./toolbox-addons-init.mjs","./extra-tools-workspace.mjs","./toolbox-utils.mjs","./toolbox-utils-extra.mjs","./manifest.webmanifest","./icon.svg"];
 self.addEventListener("install",event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting()));
 });
