@@ -50,6 +50,26 @@
     const text = document.createElement("div");
     text.textContent = safeText(content);
     body.append(text);
+    if(role === "assistant"){
+      const actions = document.createElement("div");
+      actions.className = "message-actions";
+      const copyButton = document.createElement("button");
+      copyButton.type = "button";
+      copyButton.className = "message-copy";
+      copyButton.textContent = "Copy reply";
+      copyButton.setAttribute("aria-label", "Copy assistant reply");
+      copyButton.addEventListener("click", async () => {
+        try {
+          if(!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+          await navigator.clipboard.writeText(safeText(content));
+          showToast("Reply copied.");
+        } catch {
+          showToast("Copy is unavailable in this browser.");
+        }
+      });
+      actions.append(copyButton);
+      body.append(actions);
+    }
     if(demo){
       const note = document.createElement("div");
       note.className = "demo-note";
