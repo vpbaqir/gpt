@@ -4,17 +4,19 @@ on:
   schedule:
     - cron: "17 * * * *"
   workflow_dispatch:
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
 
 concurrency:
-  group: hourly-maintenance
+  group: hourly-maintenance-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   validate-static-app:
-    name: Validate mobile app shell
+    name: Validate Toolbox
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -29,7 +31,7 @@ jobs:
             test -s "$file" || { echo "::error::Missing or empty required file: $file"; exit 1; }
           done
 
-      - name: Verify app document references
+      - name: Verify document references and JavaScript syntax
         shell: bash
         run: |
           set -euo pipefail
@@ -39,11 +41,5 @@ jobs:
           grep -q 'register("./sw.js")' app.js
           node --check app.js
           node --check sw.js
-          node -e 'const fs=require("fs"); const m=JSON.parse(fs.readFileSync("manifest.webmanifest","utf8")); if(!m.name || !m.start_url || !Array.isArray(m.icons)) process.exit(1); console.log("Manifest valid:", m.name)'
-          echo "All static app checks passed."
-
-      - name: Maintenance summary
-        if: always()
-        run: |
-          echo "Hourly validation completed for commit $GITHUB_SHA."
-          echo "This workflow validates the app; changes should be reviewed before deployment."
+          node -e 'const fs=require("fs"); const m=JSON.parse(fs.readFileSync("manifest.webmanifest","utf8")); if(!m.name || !m.start_url || !Array.isArray(m.icons)) process.exit(1); console.log("Manifest valid:",m.name)'
+          echo "Static Toolbox checks passed."

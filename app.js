@@ -1,203 +1,72 @@
-(() => {
-  "use strict";
-  const $ = (id) => document.getElementById(id);
-  const HISTORY_KEY = "gpt-mobile-history-v1";
-  const THEME_KEY = "gpt-mobile-theme-v1";
-  const ui = {
-    sidebar:$("sidebar"),scrim:$("scrim"),chatScroll:$("chatScroll"),welcome:$("welcome"),
-    messages:$("messages"),typing:$("typingRow"),form:$("composerForm"),input:$("promptInput"),
-    send:$("sendButton"),list:$("conversationList"),toast:$("toast")
-  };
-  let conversations = readHistory();
-  let activeId = conversations[0]?.id || null;
-  let toastTimer;
-  let busy = false;
-
-  function readHistory(){
-    try {
-      const data = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
-      return Array.isArray(data) ? data.filter(x => x && typeof x.id === "string" && Array.isArray(x.messages)).slice(0,40) : [];
-    } catch { return []; }
-  }
-  function persist(){
-    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(conversations.slice(0,40))); }
-    catch { showToast("Browser storage is full. Clear some conversations."); }
-  }
-  function makeId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
-  function active(){ return conversations.find(c => c.id === activeId) || null; }
-  function showToast(message){
-    ui.toast.textContent = message;
-    ui.toast.classList.add("visible");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => ui.toast.classList.remove("visible"), 2400);
-  }
-  function safeText(value){ return String(value ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ""); }
-  function makeMessage(role, content, demo = false){
-    const article = document.createElement("article");
-    article.className = "message " + role;
-    const avatar = document.createElement("div");
-    avatar.className = "message-avatar";
-    avatar.textContent = role === "assistant" ? "g" : "B";
-    avatar.setAttribute("aria-hidden","true");
-    const body = document.createElement("div");
-    body.className = "message-content";
-    if(role === "assistant"){
-      const label = document.createElement("div");
-      label.className = "message-label";
-      label.textContent = "GPT";
-      body.append(label);
-    }
-    const text = document.createElement("div");
-    text.textContent = safeText(content);
-    body.append(text);
-    if(demo){
-      const note = document.createElement("div");
-      note.className = "demo-note";
-      note.textContent = "Demo mode: this reply is generated locally by the interface. Connect a secure server-side AI endpoint to enable real model responses.";
-      body.append(note);
-    }
-    article.append(avatar, body);
-    return article;
-  }
-  function render(){
-    ui.list.replaceChildren();
-    conversations.slice().sort((a,b) => b.updatedAt - a.updatedAt).forEach(c => {
-      const button = document.createElement("button");
-      button.className = "conversation-item" + (c.id === activeId ? " active" : "");
-      button.type = "button";
-      const icon = document.createElement("span");
-      icon.className = "history-icon";
-      icon.textContent = "◌";
-      const title = document.createElement("span");
-      title.className = "history-title";
-      title.textContent = c.title || "New conversation";
-      button.append(icon,title);
-      button.addEventListener("click", () => { activeId = c.id; render(); closeSidebar(); });
-      ui.list.append(button);
-    });
-    ui.messages.replaceChildren();
-    const conversation = active();
-    if(conversation){
-      ui.welcome.classList.add("hidden");
-      conversation.messages.forEach(m => ui.messages.append(makeMessage(m.role,m.content,m.demo)));
-    } else {
-      ui.welcome.classList.remove("hidden");
-    }
-    requestAnimationFrame(() => { ui.chatScroll.scrollTop = ui.chatScroll.scrollHeight; });
-  }
-  function createConversation(){
-    const c = {id:makeId(),title:"New conversation",updatedAt:Date.now(),messages:[]};
-    conversations.unshift(c);
-    activeId = c.id;
-    persist();
-    render();
-    ui.input.focus();
-  }
-  function openSidebar(){ ui.sidebar.classList.add("open"); ui.scrim.classList.add("visible"); }
-  function closeSidebar(){ ui.sidebar.classList.remove("open"); ui.scrim.classList.remove("visible"); }
-  function resizeInput(){ ui.input.style.height = "auto"; ui.input.style.height = Math.min(ui.input.scrollHeight,160) + "px"; }
-  function updateSend(){ ui.send.disabled = busy || !ui.input.value.trim(); }
-  function makeDemoReply(prompt){
-    const lower = prompt.toLowerCase();
-    if(/\b(hi|hello|hey|salam|assalamu alaikum)\b/.test(lower)){
-      return "Hello! What would you like to explore today? I can help explain a topic, brainstorm an idea, organise a plan, or improve a piece of writing.";
-    }
-    if(/simple|explain|understand|learn|what is/.test(lower)){
-      return "Let’s make it easier to understand.\n\n1. Start with the main idea. Describe it in one sentence.\n2. Break it into smaller parts. Learn one part at a time.\n3. Find a familiar example. Connect the idea to something you already know.\n4. Explain it in your own words. If you can teach it simply, you are making progress.\n\nTell me the exact topic and your preferred level, and I can shape a clearer explanation. (This preview is a local demo, not an AI-generated answer.)";
-    }
-    if(/plan|schedule|routine|study/.test(lower)){
-      return "A practical starting plan:\n\n• Choose one clear outcome.\n• Split it into tasks that take 15–30 minutes.\n• Start with the most important task while your attention is fresh.\n• Add short breaks and a realistic finish time.\n• Review what worked and adjust tomorrow.\n\nShare your goal and available time for a more useful plan. (This preview is a local demo, not an AI-generated answer.)";
-    }
-    if(/write|message|email|caption|rewrite/.test(lower)){
-      return "I can help you shape the message. A useful structure is: state the purpose first, give the necessary context, then end with a clear request or next step.\n\nPaste your draft and tell me the audience and tone you want. (This preview is a local demo, not an AI-generated answer.)";
-    }
-    if(/idea|brainstorm|create|project|app/.test(lower)){
-      return "Let’s turn the idea into something buildable:\n\n• Who is it for?\n• What one frustrating problem does it solve?\n• What is the smallest useful first version?\n• What would make the experience feel clear and enjoyable on a phone?\n• How will you know it works?\n\nDescribe the idea in a sentence and we can shape the first version. (This preview is a local demo, not an AI-generated answer.)";
-    }
-    return "I’ve saved your message in this browser. To answer it with a real AI model, connect a secure backend endpoint in app.js; never place a provider API key in frontend code.\n\nFor now, try one of the starter prompts or tell me whether you want help learning, planning, writing, or building something. (This is a local demo response.)";
-  }
-  async function sendMessage(raw){
-    const content = safeText(raw.trim());
-    if(!content || busy) return;
-    if(!active()) createConversation();
-    const c = active();
-    c.messages.push({role:"user",content,at:Date.now()});
-    if(c.messages.length === 1) c.title = content.length > 32 ? content.slice(0,32).trimEnd() + "…" : content;
-    c.updatedAt = Date.now();
-    persist();
-    ui.input.value = "";
-    resizeInput();
-    busy = true;
-    updateSend();
-    render();
-    ui.typing.classList.remove("hidden");
-    requestAnimationFrame(() => { ui.chatScroll.scrollTop = ui.chatScroll.scrollHeight; });
-    // A deterministic local preview keeps the empty app usable without credentials.
-    // Replace this block with fetch('/api/chat', ...) once a secured backend is configured.
-    await new Promise(resolve => setTimeout(resolve, 650));
-    const reply = makeDemoReply(content);
-    c.messages.push({role:"assistant",content:reply,demo:true,at:Date.now()});
-    c.updatedAt = Date.now();
-    busy = false;
-    ui.typing.classList.add("hidden");
-    persist();
-    render();
-    updateSend();
-  }
-
-  $("newChat").addEventListener("click", () => { createConversation(); closeSidebar(); });
-  $("openSidebar").addEventListener("click",openSidebar);
-  $("closeSidebar").addEventListener("click",closeSidebar);
-  ui.scrim.addEventListener("click",closeSidebar);
-  ui.form.addEventListener("submit",e => { e.preventDefault(); sendMessage(ui.input.value); });
-  ui.input.addEventListener("input",() => { resizeInput(); updateSend(); });
-  ui.input.addEventListener("keydown",e => {
-    if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); if(!ui.send.disabled) ui.form.requestSubmit(); }
-  });
-  document.querySelectorAll(".suggestion").forEach(button => button.addEventListener("click",() => {
-    ui.input.value = button.dataset.prompt || "";
-    resizeInput(); updateSend(); ui.input.focus();
-    if(window.matchMedia("(max-width:700px)").matches) ui.input.scrollIntoView({behavior:"smooth",block:"end"});
-  }));
-  $("themeToggle").addEventListener("click",() => {
-    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-    document.documentElement.dataset.theme = next;
-    $("themeIcon").textContent = next === "dark" ? "☀" : "☾";
-    try { localStorage.setItem(THEME_KEY,next); } catch {}
-  });
-  $("shareButton").addEventListener("click",async () => {
-    const c = active();
-    if(!c || !c.messages.length){ showToast("Start a conversation before sharing."); return; }
-    const transcript = c.messages.map(m => (m.role === "user" ? "You: " : "GPT demo: ") + m.content).join("\n\n");
-    try {
-      if(navigator.share) await navigator.share({title:c.title,text:transcript});
-      else if(navigator.clipboard?.writeText){ await navigator.clipboard.writeText(transcript); showToast("Conversation copied."); }
-      else showToast("Sharing is not available in this browser.");
-    } catch(err) { if(err?.name !== "AbortError") showToast("Could not share this conversation."); }
-  });
-  $("attachButton").addEventListener("click",() => showToast("Attachments are not enabled in this demo."));
-  $("clearHistory").addEventListener("click",() => {
-    if(!conversations.length){ showToast("There is no history to clear."); return; }
-    if(window.confirm("Clear all conversations saved in this browser?")){
-      conversations = []; activeId = null; persist(); render(); showToast("Local conversation history cleared.");
-    }
-  });
-  $("profileButton").addEventListener("click",() => showToast("Personal workspace — demo mode."));
-  document.addEventListener("keydown",e => {
-    if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k"){ e.preventDefault(); createConversation(); }
-    if(e.key === "Escape") closeSidebar();
-  });
-  try {
-    const savedTheme = localStorage.getItem(THEME_KEY);
-    if(savedTheme === "dark" || savedTheme === "light"){
-      document.documentElement.dataset.theme = savedTheme;
-      $("themeIcon").textContent = savedTheme === "dark" ? "☀" : "☾";
-    } else if(window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      document.documentElement.dataset.theme = "dark"; $("themeIcon").textContent = "☀";
-    }
-  } catch {}
-  render(); updateSend();
-  if("serviceWorker" in navigator && location.protocol.startsWith("http")){
-    window.addEventListener("load",() => navigator.serviceWorker.register("./sw.js").catch(() => {}));
-  }
+(()=>{"use strict";
+const $=id=>document.getElementById(id);
+const T=[
+["compress-pdf","Compress PDF","Shrink a PDF for email or uploads.","PDF","⇩","green","pdfcompress"],
+["merge-pdf","Merge PDFs","Join multiple PDFs into one file.","PDF","▤","rose","merge"],
+["images-pdf","Images to PDF","Turn photos and scans into a neat PDF.","PDF","▧","blue","imagespdf"],
+["extract-pdf","Extract PDF text","Copy searchable text from a PDF.","PDF","≡","violet","pdftext"],
+["pdf-pages","PDF page picker","Save selected pages into a new PDF.","PDF","▦","amber","pages"],
+["pdf-info","PDF details","Check page count and file size.","PDF","ⓘ","slate","pdfinfo"],
+["image-compress","Image compressor","Reduce JPG, PNG or WebP file size.","Images","◩","green","image"],
+["image-resize","Image resizer","Resize an image to exact dimensions.","Images","⤢","blue","resize"],
+["image-convert","Image converter","Convert images to JPG, PNG or WebP.","Images","⟳","violet","image"],
+["image-colors","Color picker","Find a color from an uploaded image.","Images","◉","rose","color"],
+["ocr-scan","OCR text scanner","Extract text from a photo or scanned page.","Scan & OCR","⌕","amber","ocr"],
+["qr-scan","QR reader","Read a QR code from an image.","Scan & OCR","▦","slate","qrread"],
+["word-counter","Word counter","Count words, characters and reading time.","Text","≡","green","words"],
+["case-converter","Case converter","Switch text to upper, lower or title case.","Text","Aa","violet","case"],
+["text-cleaner","Text cleaner","Remove extra spaces and blank lines.","Text","✧","blue","clean"],
+["duplicate-lines","Duplicate line remover","Keep only unique lines in your text.","Text","☷","rose","dupes"],
+["qr-maker","QR code maker","Create a QR code for a link or message.","Generators","▦","slate","qrmake"],
+["password-maker","Password generator","Generate a strong random password.","Generators","⌑","green","password"],
+["lorem-maker","Lorem ipsum","Generate placeholder text for designs.","Generators","¶","amber","lorem"]
+].map(([id,name,desc,cat,icon,tone,kind],i)=>({id,name,desc,cat,icon,tone,kind,popular:i}));
+let active=null,files=[],category="All",search="",saved=[],sortPopular=true,timer;
+try{saved=JSON.parse(localStorage.getItem("toolbox-saved-v1")||"[]")}catch{}
+const grid=$("toolGrid"),home=$("homeView"),view=$("toolView"),card=$("workspaceCard");
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=n=>n<1024?n+" B":n<1048576?(n/1024).toFixed(1)+" KB":(n/1048576).toFixed(2)+" MB";
+function toast(s){$("toast").textContent=s;$("toast").classList.add("visible");clearTimeout(timer);timer=setTimeout(()=>$("toast").classList.remove("visible"),2400)}
+function render(){let list=T.filter(t=>(category==="All"||category==="Saved"||t.cat===category)&&(category!=="Saved"||saved.includes(t.id))&&(!search||(t.name+" "+t.desc+" "+t.cat).toLowerCase().includes(search.toLowerCase())));list.sort((a,b)=>sortPopular?a.popular-b.popular:a.name.localeCompare(b.name));grid.innerHTML=list.map(t=>'<button class="tool-card" data-open="'+t.id+'"><div class="card-top"><span class="tool-icon '+t.tone+'">'+t.icon+'</span><span class="favorite '+(saved.includes(t.id)?"saved":"")+'" data-fav="'+t.id+'" role="button" tabindex="0" aria-label="Save '+esc(t.name)+'">'+(saved.includes(t.id)?"♥":"♡")+'</span></div><h3>'+esc(t.name)+'</h3><p>'+esc(t.desc)+'</p><div class="card-bottom"><span class="tag">'+esc(t.cat)+'</span><span class="card-arrow">↗</span></div></button>').join("");$("toolCount").textContent=list.length+" tool"+(list.length===1?"":"s");$("emptyState").classList.toggle("hidden",list.length>0);grid.classList.toggle("hidden",!list.length);document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",b.dataset.filter===category));document.querySelectorAll("[data-category]").forEach(b=>b.classList.toggle("active",b.dataset.category===category));$("crumbCurrent").textContent=category==="All"?"All tools":category==="Saved"?"Saved tools":category;$("sectionTitle").textContent=category==="All"?"Useful, by design":category==="Saved"?"Your saved tools":category+" tools"}
+function toggleSave(id){saved=saved.includes(id)?saved.filter(x=>x!==id):[...saved,id];try{localStorage.setItem("toolbox-saved-v1",JSON.stringify(saved))}catch{}render();if(active?.id===id)saveButton();toast(saved.includes(id)?"Saved for later":"Removed from saved tools")}
+function saveButton(){$("saveTool").textContent=saved.includes(active.id)?"♥":"♡";$("saveTool").classList.toggle("saved",saved.includes(active.id))}
+function openTool(id){active=T.find(t=>t.id===id);files=[];home.classList.add("hidden");view.classList.remove("hidden");$("workspaceIcon").textContent=active.icon;$("workspaceIcon").className="tool-icon large "+active.tone;$("workspaceCategory").textContent=active.cat.toUpperCase()+" TOOL";$("workspaceTitle").textContent=active.name;$("workspaceDescription").textContent=active.desc;saveButton();drawWorkspace();window.scrollTo({top:0,behavior:"smooth"})}
+function picker(accept,multiple=false){return '<input class="file-input" id="fileInput" type="file" accept="'+accept+'" '+(multiple?"multiple":"")+'><div class="drop-zone" id="dropZone"><div class="drop-icon">↑</div><h3>Drop your file'+(multiple?"s":"")+' here</h3><p>or choose from your device · Files stay in this browser</p><button class="primary-button" id="chooseFiles" type="button">Choose file'+(multiple?"s":"")+'</button></div><div class="file-list" id="fileList"></div><div id="options"></div><div class="tool-actions" id="actions"></div><div id="progressWrap" class="hidden"><div class="progress"><span id="progressBar"></span></div><p class="status-text" id="statusText" role="status"></p></div><div id="resultArea"></div>'}
+function drawWorkspace(){let k=active.kind;card.innerHTML="";if(["pdfcompress","merge","imagespdf","pdftext","pages","pdfinfo","image","resize","color","ocr","qrread"].includes(k)){let accept=["pdfcompress","merge","pdftext","pages","pdfinfo"].includes(k)?"application/pdf":k==="imagespdf"||k==="ocr"||k==="qrread"?"image/*": "image/*";if(k==="ocr")accept="image/*,.pdf";card.innerHTML=picker(accept,["merge","imagespdf"].includes(k));bindFiles(k);if(k==="pdfcompress")$("options").innerHTML='<div class="field-row"><div class="field"><label for="quality">COMPRESSION QUALITY <span id="qualityText">65%</span></label><input id="quality" type="range" min="25" max="90" value="65"></div></div><p class="status-text">Pages are rasterised to images. File size may shrink, but text will no longer be selectable.</p>';if(k==="pages")$("options").innerHTML='<div class="field-row"><div class="field"><label for="ranges">PAGES TO KEEP</label><input id="ranges" placeholder="Example: 1, 3-5, 8"></div></div>';if(k==="ocr")$("options").innerHTML='<div class="field-row"><div class="field"><label for="ocrLang">OCR LANGUAGE</label><select id="ocrLang"><option value="eng">English</option><option value="ara">Arabic</option><option value="mal">Malayalam</option><option value="hin">Hindi</option><option value="urd">Urdu</option></select></div></div><p class="status-text">Language data may download on first use.</p>';if(["image","resize"].includes(k))imageOptions(k);if(k==="pdfcompress")$("quality").oninput=()=>$("qualityText").textContent=$("quality").value+"%";return}
+if(["words","case","clean","dupes"].includes(k)){card.innerHTML='<div class="field"><label for="textInput">YOUR TEXT</label><textarea id="textInput" placeholder="Paste or type your text here…"></textarea></div><div id="textStats" class="status-text">Start typing to see results.</div><div class="tool-actions" id="textActions"></div><div id="resultArea"></div>';bindText(k);return}
+if(k==="qrmake"){card.innerHTML='<div class="field"><label for="qrText">LINK OR TEXT</label><input id="qrText" placeholder="https://example.com" maxlength="2000"></div><div class="field-row"><div class="field"><label for="qrSize">IMAGE SIZE</label><select id="qrSize"><option>192</option><option selected>320</option><option>512</option></select></div></div><div class="tool-actions"><button class="primary-button" id="makeQr">Create QR code ↗</button></div><div id="resultArea"></div>';$("makeQr").onclick=makeQr;return}
+if(k==="password"){card.innerHTML='<div class="field-row"><div class="field"><label for="pwLength">PASSWORD LENGTH</label><input type="number" id="pwLength" min="8" max="128" value="20"></div></div><div class="field-row"><label><input type="checkbox" id="pwUpper" checked> Uppercase</label><label><input type="checkbox" id="pwLower" checked> Lowercase</label><label><input type="checkbox" id="pwNumbers" checked> Numbers</label><label><input type="checkbox" id="pwSymbols" checked> Symbols</label></div><div class="tool-actions"><button class="primary-button" id="makePassword">Generate password</button></div><div id="resultArea"></div>';$("makePassword").onclick=makePassword;return}
+if(k==="lorem"){card.innerHTML='<div class="field-row"><div class="field"><label for="loremCount">PARAGRAPHS</label><input id="loremCount" type="number" min="1" max="20" value="3"></div></div><div class="tool-actions"><button class="primary-button" id="makeLorem">Generate text</button></div><div id="resultArea"></div>';$("makeLorem").onclick=makeLorem}}
+function bindFiles(k){let input=$("fileInput"),zone=$("dropZone");$("chooseFiles").onclick=()=>input.click();input.onchange=()=>setFiles([...input.files],k);zone.ondragover=e=>{e.preventDefault();zone.classList.add("dragover")};zone.ondragleave=()=>zone.classList.remove("dragover");zone.ondrop=e=>{e.preventDefault();zone.classList.remove("dragover");setFiles([...e.dataTransfer.files],k)}}
+function imageOptions(k){$("options").innerHTML='<div class="field-row"><div class="field"><label for="imgFormat">OUTPUT FORMAT</label><select id="imgFormat"><option value="image/webp">WebP · smaller</option><option value="image/jpeg">JPG</option><option value="image/png">PNG</option></select></div><div class="field"><label for="imgQuality">QUALITY <span id="imgQualityText">78%</span></label><input type="range" id="imgQuality" min="25" max="100" value="78"></div></div>'+(k==="resize"?'<div class="field-row"><div class="field"><label for="imgWidth">WIDTH (PX)</label><input type="number" id="imgWidth" min="1" max="12000" placeholder="e.g. 1200"></div><div class="field"><label for="imgHeight">HEIGHT (PX)</label><input type="number" id="imgHeight" min="1" max="12000" placeholder="Optional"></div></div><label class="status-text"><input type="checkbox" id="keepRatio" checked> Keep aspect ratio</label>':"");$("imgQuality").oninput=()=>$("imgQualityText").textContent=$("imgQuality").value+"%"}
+function setFiles(list,k){const pdf=["pdfcompress","merge","pdftext","pages","pdfinfo"].includes(k),valid=list.filter(f=>pdf?(f.type==="application/pdf"||f.name.toLowerCase().endsWith(".pdf")):f.type.startsWith("image/")||(k==="ocr"&&f.name.toLowerCase().endsWith(".pdf")));if(!valid.length){toast("Choose a supported file.");return}files=["merge","imagespdf"].includes(k)?[...files,...valid].slice(0,30):[valid[0]];$("fileList").innerHTML=files.map((f,i)=>'<div class="file-row"><span class="file-badge">'+esc(f.name.split(".").pop().slice(0,4).toUpperCase())+'</span><div class="file-meta"><strong>'+esc(f.name)+'</strong><small>'+fmt(f.size)+'</small></div><button class="remove-file" data-remove="'+i+'" aria-label="Remove file">×</button></div>').join("");$("fileList").querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{const remaining=files.filter((_,j)=>j!==+b.dataset.remove);if(!remaining.length){files=[];$("fileList").innerHTML="";$("actions").innerHTML="";$("resultArea").innerHTML="";return}files=[];setFiles(remaining,k)});$("actions").innerHTML='<button class="primary-button" id="runTool">'+({"pdfcompress":"Compress PDF","merge":"Merge PDFs","imagespdf":"Create PDF","pdftext":"Extract text","pages":"Save selected pages","pdfinfo":"Read PDF details","image":"Compress image","resize":"Resize image","color":"Pick color","ocr":"Extract text","qrread":"Read QR code"}[k])+' ↗</button>';$("runTool").onclick=()=>runFile(k)}
+function progress(p,msg){$("progressWrap").classList.remove("hidden");$("progressBar").style.width=p+"%";$("statusText").textContent=msg}
+function result(html){$("resultArea").innerHTML=html}
+function download(blob,name){let url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)}
+function base(f){return f.name.replace(/\.[^.]+$/,"")}
+async function runFile(k){if(!files.length)return;let f=files[0];try{progress(5,"Preparing file…");result("");if(["pdfinfo","pdftext","pages","pdfcompress","merge","imagespdf"].includes(k)&&!window.PDFLib)throw Error("PDF library is loading. Check your internet connection and try again.");
+if(k==="pdfinfo"){let p=await PDFLib.PDFDocument.load(await f.arrayBuffer());result('<div class="result-box"><h3>PDF details</h3><p>'+esc(f.name)+'</p><p>Pages: '+p.getPageCount()+'</p><p>File size: '+fmt(f.size)+'</p></div>');progress(100,"Done");return}
+if(k==="merge"){if(files.length<2)throw Error("Choose at least two PDFs.");let out=await PDFLib.PDFDocument.create();for(let i=0;i<files.length;i++){progress(10+i/files.length*75,"Adding PDF "+(i+1)+"…");let src=await PDFLib.PDFDocument.load(await files[i].arrayBuffer());(await out.copyPages(src,src.getPageIndices())).forEach(p=>out.addPage(p))}let bytes=await out.save();download(new Blob([bytes],{type:"application/pdf"}),"merged.pdf");progress(100,"Merged PDFs · "+fmt(bytes.length));return}
+if(k==="imagespdf"){let out=await PDFLib.PDFDocument.create();for(let i=0;i<files.length;i++){progress(10+i/files.length*75,"Adding image "+(i+1)+"…");let file=files[i],bytes=await file.arrayBuffer(),img;try{img=await out.embedJpg(bytes)}catch{try{img=await out.embedPng(bytes)}catch{let b=await imageBlob(file,"image/jpeg",.92);img=await out.embedJpg(await b.arrayBuffer())}}let p=out.addPage([img.width,img.height]);p.drawImage(img,{x:0,y:0,width:img.width,height:img.height})}let bytes=await out.save();download(new Blob([bytes],{type:"application/pdf"}),"images.pdf");progress(100,"Created PDF · "+fmt(bytes.length));return}
+if(k==="pdftext"){let pdf=await pdfjs(f),text="";for(let i=1;i<=pdf.numPages;i++){progress(i/pdf.numPages*95,"Reading page "+i+"…");let p=await pdf.getPage(i),c=await p.getTextContent();text+="\n\n— Page "+i+" —\n"+c.items.map(x=>x.str).join(" ")}showTextResult(text,base(f)+".txt");progress(100,"Text extracted · "+text.length+" characters");return}
+if(k==="pages"){let src=await PDFLib.PDFDocument.load(await f.arrayBuffer()),indices=parseRanges($("ranges").value,src.getPageCount()),out=await PDFLib.PDFDocument.create();(await out.copyPages(src,indices)).forEach(p=>out.addPage(p));let b=await out.save();download(new Blob([b],{type:"application/pdf"}),base(f)+"-pages.pdf");progress(100,"Saved "+indices.length+" pages");return}
+if(k==="pdfcompress"){if(!window.pdfjsLib)throw Error("PDF reader library is loading. Try again.");pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";let pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise,out=await PDFLib.PDFDocument.create(),q=+$("quality").value/100;for(let i=1;i<=pdf.numPages;i++){progress((i-1)/pdf.numPages*90,"Optimising page "+i+" of "+pdf.numPages);let page=await pdf.getPage(i),vp=page.getViewport({scale:1.35}),c=document.createElement("canvas");c.width=vp.width;c.height=vp.height;await page.render({canvasContext:c.getContext("2d"),viewport:vp}).promise;let b=await new Promise(r=>c.toBlob(r,"image/jpeg",q)),img=await out.embedJpg(await b.arrayBuffer()),p=out.addPage([vp.width,vp.height]);p.drawImage(img,{x:0,y:0,width:vp.width,height:vp.height});c.width=0;c.height=0}let b=await out.save();download(new Blob([b],{type:"application/pdf"}),base(f)+"-smaller.pdf");progress(100,fmt(f.size)+" → "+fmt(b.length));result('<div class="result-box"><h3>Compression finished</h3><p>Original: '+fmt(f.size)+' · New: '+fmt(b.length)+'</p><p>Important: pages are images now; text selection, links and form fields are not preserved.</p></div>');return}
+if(["image","resize"].includes(k)){let type=$("imgFormat").value,b=await imageBlob(f,type,+$("imgQuality").value/100,k);download(b,base(f)+(k==="resize"?"-resized":"-compressed")+"."+({"image/webp":"webp","image/jpeg":"jpg","image/png":"png"}[type]));progress(100,fmt(f.size)+" → "+fmt(b.size));result('<div class="result-box"><h3>Image ready</h3><p>Original '+fmt(f.size)+' · New '+fmt(b.size)+'</p></div>');return}
+if(k==="color"){let img=await loadImage(f),c=document.createElement("canvas"),ctx=c.getContext("2d");c.width=img.naturalWidth;c.height=img.naturalHeight;ctx.drawImage(img,0,0);let d=ctx.getImageData(c.width>>1,c.height>>1,1,1).data,hex="#"+[d[0],d[1],d[2]].map(x=>x.toString(16).padStart(2,"0")).join("");result('<div class="result-box"><h3>Center pixel color</h3><div style="height:70px;background:'+hex+';border-radius:10px"></div><p><strong>'+hex.toUpperCase()+'</strong> · rgb('+d[0]+', '+d[1]+', '+d[2]+')</p><button class="secondary-button" id="copyColor">Copy HEX</button></div>');$("copyColor").onclick=()=>copy(hex.toUpperCase());progress(100,"Color sampled");return}
+if(k==="ocr"){let source=f;if(f.name.toLowerCase().endsWith(".pdf")){let pdf=await pdfjs(f),p=await pdf.getPage(1),vp=p.getViewport({scale:2}),c=document.createElement("canvas");c.width=vp.width;c.height=vp.height;await p.render({canvasContext:c.getContext("2d"),viewport:vp}).promise;source=c}if(!window.Tesseract)throw Error("OCR library is loading. Try again.");let worker=await Tesseract.createWorker($("ocrLang").value,1,{logger:m=>{if(m.status==="recognizing text")progress(m.progress*95,"Recognising text… "+Math.round(m.progress*100)+"%")}}),r=await worker.recognize(source);await worker.terminate();showTextResult(r.data.text,base(f)+"-ocr.txt");progress(100,"Recognised "+r.data.text.length+" characters");return}
+if(k==="qrread"){if(!("BarcodeDetector"in window))throw Error("QR reading needs a recent Chrome browser.");let bitmap=await createImageBitmap(f),codes=await new BarcodeDetector({formats:["qr_code"]}).detect(bitmap);if(!codes.length)throw Error("No QR code found.");result('<div class="result-box"><h3>QR content</h3><pre>'+esc(codes[0].rawValue)+'</pre><button class="secondary-button" id="copyQr">Copy content</button></div>');$("copyQr").onclick=()=>copy(codes[0].rawValue);progress(100,"QR code found");return}
+}catch(e){progress(100,"Could not finish");result('<div class="result-box"><h3>Something went wrong</h3><p>'+esc(e.message||"Unable to process file.")+'</p></div>');toast(e.message||"Unable to process file")}}
+function parseRanges(raw,count){let s=new Set();raw.split(",").map(x=>x.trim()).filter(Boolean).forEach(x=>{let m=x.match(/^(\d+)(?:\s*-\s*(\d+))?$/);if(!m)throw Error("Use page numbers like 1, 3-5.");let a=+m[1],b=+(m[2]||m[1]);if(a<1||b<a||b>count)throw Error("Page range exceeds the document.");for(let i=a;i<=b;i++)s.add(i-1)});return [...s].sort((a,b)=>a-b)}
+async function pdfjs(f){if(!window.pdfjsLib)throw Error("PDF.js is loading.");pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";return pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise}
+function loadImage(f){return new Promise((res,rej)=>{let u=URL.createObjectURL(f),i=new Image();i.onload=()=>{URL.revokeObjectURL(u);res(i)};i.onerror=()=>{URL.revokeObjectURL(u);rej(Error("Could not open image."))};i.src=u})}
+async function imageBlob(f,type,q,k){let i=await loadImage(f),w=i.naturalWidth,h=i.naturalHeight;if(k==="resize"){let tw=+$("imgWidth").value||w,th=+$("imgHeight").value||h;if($("keepRatio").checked){let r=Math.min(tw/w,th/h);w=Math.round(w*r);h=Math.round(h*r)}else{w=tw;h=th}}let s=Math.min(1,12000/Math.max(w,h));w=Math.max(1,Math.round(w*s));h=Math.max(1,Math.round(h*s));let c=document.createElement("canvas");c.width=w;c.height=h;let x=c.getContext("2d");if(type==="image/jpeg"){x.fillStyle="#fff";x.fillRect(0,0,w,h)}x.drawImage(i,0,0,w,h);return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(Error("Could not export this format.")),type,q))}
+function showTextResult(text,name){result('<div class="result-box"><h3>Extracted text</h3><div class="tool-actions"><button class="secondary-button" id="copyExtracted">Copy text</button><button class="secondary-button" id="downloadExtracted">Download .txt</button></div><pre>'+esc(text)+'</pre></div>');$("copyExtracted").onclick=()=>copy(text);$("downloadExtracted").onclick=()=>download(new Blob([text],{type:"text/plain;charset=utf-8"}),name)}
+async function copy(text){try{await navigator.clipboard.writeText(text)}catch{let x=document.createElement("textarea");x.value=text;document.body.append(x);x.select();document.execCommand("copy");x.remove()}toast("Copied to clipboard")}
+function bindText(k){let input=$("textInput");function update(){let t=input.value,words=t.trim()?t.trim().split(/\s+/).length:0;$("textStats").textContent=words+" words · "+t.length+" characters · "+t.replace(/\s/g,"").length+" without spaces · "+Math.max(1,Math.ceil(words/200))+" min reading";$("textActions").innerHTML=k==="words"?'<button class="secondary-button" id="copyText">Copy text</button>':(k==="case"?'<div class="field"><label for="caseMode">CONVERT TO</label><select id="caseMode"><option value="title">Title Case</option><option value="upper">UPPERCASE</option><option value="lower">lowercase</option><option value="sentence">Sentence case</option></select></div>':'')+'<button class="primary-button" id="transform">Apply changes ↗</button>';if($("copyText"))$("copyText").onclick=()=>copy(t);if($("transform"))$("transform").onclick=()=>{let v=t;if(k==="case"){let m=$("caseMode").value;v=m==="upper"?t.toUpperCase():m==="lower"?t.toLowerCase():m==="sentence"?t.toLowerCase().replace(/(^\s*\w|[.!?]\s+\w)/g,c=>c.toUpperCase()):t.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase())}if(k==="clean")v=t.split("\n").map(x=>x.replace(/[ \t]+/g," ").trim()).join("\n").replace(/\n{3,}/g,"\n\n").trim();if(k==="dupes"){let seen=new Set();v=t.split("\n").filter(x=>{let z=x.trim();if(!z||seen.has(z))return false;seen.add(z);return true}).join("\n")}result('<div class="result-box"><h3>Result</h3><div class="tool-actions"><button class="secondary-button" id="copyResult">Copy result</button><button class="secondary-button" id="downloadResult">Download .txt</button></div><pre>'+esc(v)+'</pre></div>');$("copyResult").onclick=()=>copy(v);$("downloadResult").onclick=()=>download(new Blob([v],{type:"text/plain"}),"toolbox-text.txt")}}input.oninput=update;update()}
+async function makeQr(){let text=$("qrText").value.trim();if(!text)return toast("Enter a link or text first.");if(!window.QRCode)return toast("QR library is loading.");let c=document.createElement("canvas");try{await QRCode.toCanvas(c,text,{width:+$("qrSize").value,margin:4});result('<div class="result-box"><h3>Your QR code</h3><div id="qrPlace" style="display:grid;place-items:center"></div><button class="primary-button" id="downloadQr">Download PNG</button></div>');$("qrPlace").append(c);$("downloadQr").onclick=()=>c.toBlob(b=>download(b,"toolbox-qr.png"))}catch{toast("Could not create QR code.")}}
+function secureIndex(max){if(!Number.isSafeInteger(max)||max<1||max>0x100000000)throw Error("Invalid random range.");const limit=Math.floor(0x100000000/max)*max,a=new Uint32Array(1);do{crypto.getRandomValues(a)}while(a[0]>=limit);return a[0]%max}
+function makePassword(){const n=Math.max(8,Math.min(128,+$("pwLength").value||20)),sets=[];if($("pwUpper").checked)sets.push("ABCDEFGHIJKLMNOPQRSTUVWXYZ");if($("pwLower").checked)sets.push("abcdefghijklmnopqrstuvwxyz");if($("pwNumbers").checked)sets.push("0123456789");if($("pwSymbols").checked)sets.push("!@#$%^&*()-_=+[]{};:,.?");if(!sets.length)return toast("Choose at least one character set.");if(!crypto?.getRandomValues)return toast("Secure password generation is not supported in this browser.");const chars=sets.join(""),out=sets.map(set=>set[secureIndex(set.length)]);while(out.length<n)out.push(chars[secureIndex(chars.length)]);for(let i=out.length-1;i>0;i--){const j=secureIndex(i+1);[out[i],out[j]]=[out[j],out[i]]}const pw=out.join("");result('<div class="result-box"><h3>Generated password</h3><pre>'+esc(pw)+'</pre><p class="status-text">Includes at least one character from every selected set.</p><div class="tool-actions"><button class="primary-button" id="copyPw">Copy password</button><button class="secondary-button" id="regenPw">Generate another</button></div></div>');$("copyPw").onclick=()=>copy(pw);$("regenPw").onclick=makePassword}
+function makeLorem(){let p=["Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus posuere velit aliquet.","Curabitur blandit tempus porttitor. Aenean lacinia bibendum nulla sed consectetur. Maecenas faucibus mollis interdum.","Donec sed odio dui. Vestibulum id ligula porta felis euismod semper. Cras mattis consectetur purus sit amet fermentum.","Nullam quis risus eget urna mollis ornare vel eu leo. Sed posuere consectetur est at lobortis."],text=Array.from({length:Math.max(1,Math.min(20,+$("loremCount").value||3))},(_,i)=>p[i%p.length]).join("\n\n");result('<div class="result-box"><h3>Placeholder text</h3><pre>'+text+'</pre><button class="primary-button" id="copyLorem">Copy text</button></div>');$("copyLorem").onclick=()=>copy(text)}
+grid.addEventListener("click",e=>{let fav=e.target.closest("[data-fav]");if(fav){e.preventDefault();e.stopPropagation();toggleSave(fav.dataset.fav);return}let b=e.target.closest("[data-open]");if(b)openTool(b.dataset.open)});grid.addEventListener("keydown",e=>{let f=e.target.closest("[data-fav]");if(f&&(e.key==="Enter"||e.key===" ")){e.preventDefault();toggleSave(f.dataset.fav)}});
+$("toolSearch").oninput=e=>{search=e.target.value;render()};document.querySelectorAll("[data-filter],[data-category]").forEach(b=>b.onclick=()=>{category=b.dataset.filter||b.dataset.category;render()});$("backHome").onclick=()=>{view.classList.add("hidden");home.classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"})};$("saveTool").onclick=()=>toggleSave(active.id);$("sortToggle").onclick=()=>{sortPopular=!sortPopular;$("sortToggle").innerHTML=sortPopular?'✳ <span>Popular</span> <span>⌄</span>':'A↕ <span>Name</span> <span>⌄</span>';render()};$("resetFilters").onclick=()=>{search="";$("toolSearch").value="";category="All";render()};$("themeToggle").onclick=()=>{let d=document.documentElement.dataset.theme!=="dark";document.documentElement.dataset.theme=d?"dark":"light";try{localStorage.setItem("toolbox-theme-v1",d?"dark":"light")}catch{}};try{let th=localStorage.getItem("toolbox-theme-v1");if(th)document.documentElement.dataset.theme=th}catch{}document.addEventListener("keydown",e=>{if(e.key==="/"&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();$("toolSearch").focus()}if(e.key==="Escape"&&!view.classList.contains("hidden"))$("backHome").click()});if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));render();
 })();
