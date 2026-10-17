@@ -129,3 +129,35 @@ kbd{margin-left:auto;font-size:10px;font-weight:500;color:var(--subtle);backgrou
 @media(max-width:700px){.sidebar{position:absolute;inset:0 auto 0 0;width:min(290px,84vw);transform:translateX(-102%);box-shadow:none}.sidebar.open{transform:translateX(0);box-shadow:20px 0 50px rgba(0,0,0,.12)}.scrim.visible{display:block;position:absolute;inset:0;background:rgba(15,20,15,.25);z-index:9}.sidebar-close{display:grid}.menu-button{display:grid}.mobile-brand{display:flex;align-items:center;gap:7px;font-family:Manrope,sans-serif;font-weight:800;font-size:15px;letter-spacing:-.5px}.mobile-brand .brand-mark{width:24px;height:24px;border-radius:8px;font-size:18px}.topbar{height:57px;padding:0 14px}.topbar-left{gap:6px}.model-pill{margin-left:7px;font-size:9px;padding:6px 8px}.topbar-actions{gap:4px}.share-button{padding:7px 8px;font-size:9px}.chat-scroll{padding:10px 17px 15px}.welcome{margin:clamp(20px,7vh,65px) auto 20px}.welcome-orb{margin-bottom:21px}.welcome h1{font-size:clamp(35px,10vw,48px);letter-spacing:-2px}.welcome-subtitle{font-size:11px;margin:15px 0 24px}.suggestion-grid{gap:8px}.suggestion{padding:11px 9px;gap:8px;min-height:73px;border-radius:12px}.suggestion-icon{width:29px;height:29px;border-radius:9px;font-size:13px}.suggestion strong{font-size:9px}.suggestion small{font-size:8px;line-height:1.4}.suggestion-arrow{font-size:12px}.composer-area{padding:8px 12px max(10px,env(safe-area-inset-bottom))}.composer{padding:9px 9px 8px;border-radius:15px}.composer textarea{font-size:13px}.hint{display:none}.composer-tools{gap:5px}.disclaimer{font-size:8px;line-height:1.6}.disclaimer button{font-size:8px}.messages{gap:19px}.message-content{font-size:12px}.message-avatar{width:27px;height:27px}.chat-scroll{scroll-padding-bottom:15px}}
 @media(max-width:360px){.suggestion{gap:6px;padding:9px 7px}.suggestion-icon{width:25px;height:25px}.suggestion small{font-size:7px}.model-pill{gap:5px}.tool-label{display:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+
+/* Small, touch-friendly actions beneath assistant messages. */
+.message-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 10px;
+}
+.message-copy {
+  appearance: none;
+  border: 1px solid var(--line, rgba(120, 120, 120, .22));
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted, inherit);
+  font: inherit;
+  font-size: 12px;
+  min-height: 34px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background-color .16s ease, border-color .16s ease;
+}
+.message-copy:hover {
+  background: var(--surface-soft, rgba(120, 120, 120, .08));
+  border-color: var(--line-strong, rgba(120, 120, 120, .38));
+}
+.message-copy:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .message-copy { transition: none; }
+}
