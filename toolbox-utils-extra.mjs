@@ -22,3 +22,17 @@ export function wordFrequency(input) {
 export function addLineNumbers(input) {
   return String(input).split("\n").map((line, index) => (index + 1) + ": " + line).join("\n");
 }
+
+export function regexMatches(pattern, input, flags = "") {
+  const requested = String(flags).trim();
+  if (!/^[dgimsuvy]*$/.test(requested)) throw new Error("Use valid JavaScript regex flags only.");
+  if (new Set(requested).size !== requested.length) throw new Error("Do not repeat a regex flag.");
+  const re = new RegExp(pattern, requested.includes("g") ? requested : requested + "g");
+  const matches = [];
+  let truncated = false;
+  for (const match of String(input).matchAll(re)) {
+    if (matches.length >= 1000) { truncated = true; break; }
+    matches.push({ match: match[0], index: match.index, captures: match.slice(1) });
+  }
+  return { count: matches.length, truncated, text: matches.length ? JSON.stringify(matches, null, 2) : "No matches found." };
+}
