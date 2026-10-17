@@ -3,74 +3,128 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f7f7f4">
-  <meta name="description" content="A calm, mobile-first AI companion for thinking, learning, and creating.">
-  <title>GPT — Your AI companion</title>
+  <meta name="theme-color" content="#f5f5ef">
+  <meta name="description" content="Nexus is a creative universe for exploring ideas, building experiments, and making something unexpected.">
+  <title>Nexus — Make something unexpected</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div class="app-shell" id="appShell">
-    <aside class="sidebar" id="sidebar" aria-label="Conversation sidebar">
-      <div class="brand-row">
-        <a class="brand" href="./" aria-label="GPT home"><span class="brand-mark">g</span><span>gpt</span></a>
-        <button class="icon-button sidebar-close" id="closeSidebar" aria-label="Close sidebar">×</button>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="./" aria-label="Nexus home"><span class="brand-symbol"><i></i><i></i><i></i><i></i></span><span>NEXUS<span class="brand-period">.</span></span></a>
+      <button class="create-button" id="createButton"><span class="create-plus">＋</span><span>Make something</span><kbd>⌘ K</kbd></button>
+      <div class="nav-caption">YOUR UNIVERSE</div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <button class="nav-item active" data-view="home"><span class="nav-icon">⌂</span> Overview <span class="nav-current"></span></button>
+        <button class="nav-item" data-view="discover"><span class="nav-icon">✳</span> Discover <span class="nav-count">08</span></button>
+        <button class="nav-item" data-view="projects"><span class="nav-icon">▤</span> My creations</button>
+        <button class="nav-item" data-view="saved"><span class="nav-icon">♡</span> Saved ideas</button>
+      </nav>
+      <div class="sidebar-rule"></div>
+      <div class="nav-caption">RECENTLY OPENED</div>
+      <div class="recent-list" id="recentList">
+        <button class="recent-item" data-open="The little things"><span class="recent-mark mark-lime">✳</span><span>The little things</span></button>
+        <button class="recent-item" data-open="Orbit study planner"><span class="recent-mark mark-blue">◉</span><span>Orbit study planner</span></button>
+        <button class="recent-item" data-open="A world of sound"><span class="recent-mark mark-pink">〰</span><span>A world of sound</span></button>
       </div>
-      <button class="new-chat" id="newChat"><span class="plus">＋</span> New conversation <kbd>⌘ K</kbd></button>
-      <p class="nav-label">YOUR SPACE</p>
-      <nav class="conversation-list" id="conversationList" aria-label="Recent conversations"></nav>
-      <div class="sidebar-spacer"></div>
-      <div class="sidebar-note"><span class="status-dot"></span><span>Private by design</span></div>
-      <button class="profile-button" id="profileButton">
-        <span class="avatar">B</span><span class="profile-copy"><strong>Your workspace</strong><small>Personal</small></span><span class="profile-more">•••</span>
-      </button>
+      <div class="sidebar-bottom">
+        <div class="status-card"><span class="status-light"></span><span><strong>Your space is ready</strong><small>Ideas stay on this device</small></span><span class="status-spark">✦</span></div>
+        <button class="profile" id="profileButton"><span class="profile-avatar">B</span><span class="profile-text"><strong>My workspace</strong><small>Personal universe</small></span><span class="profile-menu">•••</span></button>
+      </div>
     </aside>
     <div class="scrim" id="scrim"></div>
-
     <main class="main-panel">
       <header class="topbar">
-        <div class="topbar-left">
-          <button class="icon-button menu-button" id="openSidebar" aria-label="Open sidebar"><span class="menu-lines">☰</span></button>
-          <span class="mobile-brand"><span class="brand-mark">g</span> gpt</span>
-          <span class="model-pill"><span class="model-dot"></span> GPT <span class="chevron">⌄</span></span>
+        <div class="topbar-start">
+          <button class="icon-button menu-button" id="openSidebar" aria-label="Open menu">☰</button>
+          <div class="breadcrumb"><span>Workspace</span><span class="breadcrumb-slash">/</span><strong id="breadcrumbCurrent">Overview</strong></div>
         </div>
         <div class="topbar-actions">
-          <button class="icon-button" id="themeToggle" aria-label="Switch color theme" title="Switch theme"><span id="themeIcon">☾</span></button>
-          <button class="share-button" id="shareButton"><span>↗</span> Share</button>
+          <label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="Find something..." aria-label="Search ideas and projects"><kbd>⌘ /</kbd></label>
+          <button class="icon-button theme-toggle" id="themeToggle" aria-label="Toggle dark theme" title="Toggle appearance">◐</button>
+          <button class="top-create" id="topCreate">＋ <span>New creation</span></button>
         </div>
       </header>
 
-      <section class="chat-scroll" id="chatScroll" aria-live="polite">
-        <div class="welcome" id="welcome">
-          <div class="welcome-orb"><span class="orb-core"></span><span class="orb-ring ring-one"></span><span class="orb-ring ring-two"></span></div>
-          <p class="eyebrow"><span class="eyebrow-line"></span> A little room to think</p>
-          <h1>What’s on your<br><em>mind today?</em></h1>
-          <p class="welcome-subtitle">Ideas, questions, half-formed thoughts.<br>Start anywhere — we’ll figure it out together.</p>
-          <div class="suggestion-grid">
-            <button class="suggestion" data-prompt="Help me understand a difficult topic in simple words."><span class="suggestion-icon icon-learn">✳</span><span><strong>Learn something</strong><small>Make a hard topic simple</small></span><span class="suggestion-arrow">↗</span></button>
-            <button class="suggestion" data-prompt="Help me brainstorm a creative project from scratch."><span class="suggestion-icon icon-create">✎</span><span><strong>Create something</strong><small>Turn a thought into a plan</small></span><span class="suggestion-arrow">↗</span></button>
-            <button class="suggestion" data-prompt="Help me solve a problem step by step."><span class="suggestion-icon icon-solve">⌘</span><span><strong>Solve a problem</strong><small>One clear step at a time</small></span><span class="suggestion-arrow">↗</span></button>
-            <button class="suggestion" data-prompt="Help me write a clear, thoughtful message."><span class="suggestion-icon icon-write">↗</span><span><strong>Find the words</strong><small>Say it just right</small></span><span class="suggestion-arrow">↗</span></button>
+      <div class="page-scroll" id="pageScroll">
+        <section class="welcome-row" id="welcomeRow">
+          <div class="welcome-copy">
+            <div class="overline"><span class="overline-dot"></span> YOUR CREATIVE UNIVERSE <span class="overline-line"></span> <span class="overline-index">VOL. 01</span></div>
+            <h1>Big ideas start<br>with a <em>little spark.</em></h1>
+            <p class="welcome-description">A space to explore the curious, build the impossible,<br class="desktop-break"> and follow an idea wherever it leads.</p>
+            <button class="hero-cta" id="heroCreate">Start with an idea <span>↗</span></button>
+            <div class="hero-footnote"><span class="mini-orbit">✳</span> No perfect plan needed. Just begin.</div>
           </div>
-        </div>
-        <div class="messages" id="messages"></div>
-        <div class="typing-row hidden" id="typingRow"><span></span><span></span><span></span><small>Thinking…</small></div>
-      </section>
+          <div class="hero-art" aria-label="Abstract orbit illustration">
+            <div class="art-topline"><span>FIG. 001</span><span>IDEAS IN MOTION</span></div>
+            <div class="orbit orbit-outer"></div><div class="orbit orbit-mid"></div><div class="orbit orbit-inner"></div>
+            <div class="planet planet-main"><span></span></div><div class="planet planet-small"></div><div class="planet planet-yellow"></div>
+            <div class="art-cross cross-one">＋</div><div class="art-cross cross-two">✳</div>
+            <div class="art-label label-one"><span class="label-line"></span><span>Wonder</span></div>
+            <div class="art-label label-two"><span>Make</span><span class="label-line"></span></div>
+            <div class="art-bottomline"><span>IMAGINATION / 001</span><span>∞</span></div>
+          </div>
+        </section>
 
-      <footer class="composer-area">
-        <form class="composer" id="composerForm">
-          <label class="sr-only" for="promptInput">Message GPT</label>
-          <textarea id="promptInput" rows="1" placeholder="Message GPT…" maxlength="8000"></textarea>
-          <div class="composer-bottom">
-            <div class="composer-tools"><button type="button" class="tool-button" id="attachButton" title="Attachment demo"><span>＋</span> <span class="tool-label">Add context</span></button><span class="composer-divider"></span><span class="hint">Be curious. Try anything.</span></div>
-            <button class="send-button" id="sendButton" type="submit" aria-label="Send message" disabled><span>↑</span></button>
+        <section class="quick-section" aria-label="Start exploring">
+          <div class="section-heading"><div><span class="section-kicker">PICK A DIRECTION</span><h2>What are we making today?</h2></div><span class="section-aside">A GOOD PLACE TO START <span>↘</span></span></div>
+          <div class="direction-grid">
+            <button class="direction-card direction-build" data-kind="build"><span class="direction-index">01 / BUILD</span><span class="direction-illustration build-illustration"><span class="build-window"><i></i><i></i><i></i><b></b><b></b><b></b></span><span class="build-cube">◇</span></span><span class="direction-title">Make it real <span>↗</span></span><span class="direction-description">Turn a rough thought into a working concept.</span></button>
+            <button class="direction-card direction-explore" data-kind="explore"><span class="direction-index">02 / EXPLORE</span><span class="direction-illustration explore-illustration"><span class="explore-sun"></span><span class="explore-ring ring-a"></span><span class="explore-ring ring-b"></span><span class="explore-dot"></span><span class="explore-star">✳</span></span><span class="direction-title">Go down a rabbit hole <span>↗</span></span><span class="direction-description">Find fascinating things you didn't know existed.</span></button>
+            <button class="direction-card direction-play" data-kind="play"><span class="direction-index">03 / PLAY</span><span class="direction-illustration play-illustration"><span class="play-shape shape-one"></span><span class="play-shape shape-two"></span><span class="play-shape shape-three"></span><span class="play-shape shape-four">✳</span></span><span class="direction-title">Try something strange <span>↗</span></span><span class="direction-description">Experiments, tiny games, and happy accidents.</span></button>
           </div>
-        </form>
-        <p class="disclaimer">GPT can make mistakes. Check important information. <button id="clearHistory">Clear history</button></p>
-      </footer>
+        </section>
+
+        <section class="discover-section" id="discoverSection">
+          <div class="section-heading"><div><span class="section-kicker">CURATED FOR THE CURIOUS</span><h2>Little worlds, big possibilities.</h2></div><button class="text-link" id="viewAll">Explore all <span>↗</span></button></div>
+          <div class="creation-grid" id="creationGrid">
+            <article class="creation-card creation-wide" data-category="build" data-title="The idea garden">
+              <button class="save-button" aria-label="Save The idea garden" data-save="The idea garden">♡</button>
+              <div class="creation-visual garden-visual"><div class="garden-sun"></div><div class="garden-hill hill-back"></div><div class="garden-hill hill-front"></div><span class="garden-flower flower-a">✳</span><span class="garden-flower flower-b">✳</span><span class="garden-flower flower-c">✳</span><span class="garden-flower flower-d">✳</span><span class="garden-label">GROW SOMETHING</span></div>
+              <div class="creation-meta"><span class="category-tag tag-green">CREATIVE TOOL</span><span class="creation-time">4 MIN EXPLORE</span></div>
+              <h3>The idea garden</h3><p>Plant a thought. Give it room to grow into something wonderful.</p>
+              <button class="open-creation" data-open="The idea garden">Step inside <span>↗</span></button>
+            </article>
+            <article class="creation-card" data-category="explore" data-title="A tiny universe">
+              <button class="save-button" aria-label="Save A tiny universe" data-save="A tiny universe">♡</button>
+              <div class="creation-visual universe-visual"><div class="universe-glow"></div><div class="universe-orbit u-orbit-a"></div><div class="universe-orbit u-orbit-b"></div><span class="universe-star star-a">✦</span><span class="universe-star star-b">✧</span><span class="universe-planet"></span><span class="universe-moon"></span><span class="universe-label">A SMALL PLACE<br>TO GET LOST</span></div>
+              <div class="creation-meta"><span class="category-tag tag-violet">EXPERIMENT</span><span class="creation-time">2 MIN EXPLORE</span></div>
+              <h3>A tiny universe</h3><p>Zoom out. Remember how much is still unknown.</p>
+              <button class="open-creation" data-open="A tiny universe">Take a look <span>↗</span></button>
+            </article>
+            <article class="creation-card" data-category="play" data-title="Shape playground">
+              <button class="save-button" aria-label="Save Shape playground" data-save="Shape playground">♡</button>
+              <div class="creation-visual shape-visual"><div class="shape-grid"></div><span class="shape-orb shape-orb-a"></span><span class="shape-orb shape-orb-b"></span><span class="shape-orb shape-orb-c"></span><span class="shape-star">✳</span><span class="shape-caption">PLAY IS<br>A PROCESS.</span></div>
+              <div class="creation-meta"><span class="category-tag tag-orange">PLAYGROUND</span><span class="creation-time">3 MIN EXPLORE</span></div>
+              <h3>Shape playground</h3><p>Move beyond the obvious. Follow the fun.</p>
+              <button class="open-creation" data-open="Shape playground">Start playing <span>↗</span></button>
+            </article>
+          </div>
+          <div class="empty-state hidden" id="emptyState"><span>⌕</span><h3>Nothing in this corner yet.</h3><p>Try another search, or start a new creation.</p><button id="emptyCreate">Make something new ↗</button></div>
+        </section>
+
+        <section class="bottom-note"><div class="bottom-note-symbol">✳</div><div><span class="section-kicker">A NOTE TO YOURSELF</span><p>“You don't have to know where an idea goes<br class="desktop-break"> to take the first step.”</p></div><span class="note-mark">N / 001</span></section>
+        <footer class="page-footer"><span>MADE FOR THE CURIOUS.</span><span>NEXUS <b>·</b> YOUR UNIVERSE, IN PROGRESS</span></footer>
+      </div>
     </main>
   </div>
+
+  <dialog class="create-dialog" id="createDialog">
+    <form id="createForm" method="dialog">
+      <div class="dialog-top"><span class="section-kicker">A NEW BEGINNING</span><button class="dialog-close" id="dialogClose" type="button" aria-label="Close">×</button></div>
+      <span class="dialog-spark">✳</span><h2>What are you<br><em>imagining?</em></h2><p>Give the idea a name. It doesn't need to be perfect.</p>
+      <label class="sr-only" for="ideaInput">Your idea</label><input id="ideaInput" maxlength="90" placeholder="A tiny app that helps..." autocomplete="off" required>
+      <div class="dialog-bottom"><span>START SMALL. THINK BIG.</span><button type="submit">Create idea <span>↗</span></button></div>
+    </form>
+  </dialog>
+  <dialog class="detail-dialog" id="detailDialog">
+    <div class="detail-content"><button class="dialog-close detail-close" id="detailClose" aria-label="Close">×</button><span class="section-kicker" id="detailTag">A LITTLE DISCOVERY</span><div class="detail-symbol">✳</div><h2 id="detailTitle">A tiny universe</h2><p id="detailDescription"></p><div class="detail-divider"></div><p class="detail-note">This is your invitation to experiment. The first version can be small, imperfect, and entirely yours.</p><button class="detail-action" id="detailAction">Make it your own <span>↗</span></button></div>
+  </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="./app.js" defer></script>
 </body>
