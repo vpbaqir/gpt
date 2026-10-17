@@ -18,3 +18,7 @@ export function wordFrequency(input) {
   const rows = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 100);
   return { total: words.length, distinct: counts.size, text: rows.map(([word, count]) => word + "\t" + count).join("\n") };
 }
+
+export function addLineNumbers(input) {
+  return String(input).split("\n").map((line, index) => (index + 1) + ": " + line).join("\n");
+}
