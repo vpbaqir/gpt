@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f7f4">
+  <meta name="description" content="A calm, mobile-first AI companion for thinking, learning, and creating.">
+  <title>GPT — Your AI companion</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar" id="sidebar" aria-label="Conversation sidebar">
+      <div class="brand-row">
+        <a class="brand" href="./" aria-label="GPT home"><span class="brand-mark">g</span><span>gpt</span></a>
+        <button class="icon-button sidebar-close" id="closeSidebar" aria-label="Close sidebar">×</button>
+      </div>
+      <button class="new-chat" id="newChat"><span class="plus">＋</span> New conversation <kbd>⌘ K</kbd></button>
+      <p class="nav-label">YOUR SPACE</p>
+      <nav class="conversation-list" id="conversationList" aria-label="Recent conversations"></nav>
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-note"><span class="status-dot"></span><span>Private by design</span></div>
+      <button class="profile-button" id="profileButton">
+        <span class="avatar">B</span><span class="profile-copy"><strong>Your workspace</strong><small>Personal</small></span><span class="profile-more">•••</span>
+      </button>
+    </aside>
+    <div class="scrim" id="scrim"></div>
+
+    <main class="main-panel">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-button menu-button" id="openSidebar" aria-label="Open sidebar"><span class="menu-lines">☰</span></button>
+          <span class="mobile-brand"><span class="brand-mark">g</span> gpt</span>
+          <span class="model-pill"><span class="model-dot"></span> GPT <span class="chevron">⌄</span></span>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-button" id="themeToggle" aria-label="Switch color theme" title="Switch theme"><span id="themeIcon">☾</span></button>
+          <button class="share-button" id="shareButton"><span>↗</span> Share</button>
+        </div>
+      </header>
+
+      <section class="chat-scroll" id="chatScroll" aria-live="polite">
+        <div class="welcome" id="welcome">
+          <div class="welcome-orb"><span class="orb-core"></span><span class="orb-ring ring-one"></span><span class="orb-ring ring-two"></span></div>
+          <p class="eyebrow"><span class="eyebrow-line"></span> A little room to think</p>
+          <h1>What’s on your<br><em>mind today?</em></h1>
+          <p class="welcome-subtitle">Ideas, questions, half-formed thoughts.<br>Start anywhere — we’ll figure it out together.</p>
+          <div class="suggestion-grid">
+            <button class="suggestion" data-prompt="Help me understand a difficult topic in simple words."><span class="suggestion-icon icon-learn">✳</span><span><strong>Learn something</strong><small>Make a hard topic simple</small></span><span class="suggestion-arrow">↗</span></button>
+            <button class="suggestion" data-prompt="Help me brainstorm a creative project from scratch."><span class="suggestion-icon icon-create">✎</span><span><strong>Create something</strong><small>Turn a thought into a plan</small></span><span class="suggestion-arrow">↗</span></button>
+            <button class="suggestion" data-prompt="Help me solve a problem step by step."><span class="suggestion-icon icon-solve">⌘</span><span><strong>Solve a problem</strong><small>One clear step at a time</small></span><span class="suggestion-arrow">↗</span></button>
+            <button class="suggestion" data-prompt="Help me write a clear, thoughtful message."><span class="suggestion-icon icon-write">↗</span><span><strong>Find the words</strong><small>Say it just right</small></span><span class="suggestion-arrow">↗</span></button>
+          </div>
+        </div>
+        <div class="messages" id="messages"></div>
+        <div class="typing-row hidden" id="typingRow"><span></span><span></span><span></span><small>Thinking…</small></div>
+      </section>
+
+      <footer class="composer-area">
+        <form class="composer" id="composerForm">
+          <label class="sr-only" for="promptInput">Message GPT</label>
+          <textarea id="promptInput" rows="1" placeholder="Message GPT…" maxlength="8000"></textarea>
+          <div class="composer-bottom">
+            <div class="composer-tools"><button type="button" class="tool-button" id="attachButton" title="Attachment demo"><span>＋</span> <span class="tool-label">Add context</span></button><span class="composer-divider"></span><span class="hint">Be curious. Try anything.</span></div>
+            <button class="send-button" id="sendButton" type="submit" aria-label="Send message" disabled><span>↑</span></button>
+          </div>
+        </form>
+        <p class="disclaimer">GPT can make mistakes. Check important information. <button id="clearHistory">Clear history</button></p>
+      </footer>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="./app.js" defer></script>
+</body>
+</html>
